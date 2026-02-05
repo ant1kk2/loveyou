@@ -1,40 +1,34 @@
 const PHRASE = "love you";
-const PARTS_COUNT = 50;
-const wrapper = document.querySelector(".wrapper")
-const diag = Math.sqrt(wrapper.clientWidth ** 2 + wrapper.clientHeight ** 2)
+const CIRCLES_COUNT = 50;
+const filteredLetters = PHRASE.toUpperCase().split("").filter(l => l !== " ");
+const elCounts = CIRCLES_COUNT + filteredLetters.length;
 
-function createElement(e, type) {
+function createElement(e, i, letter = "", wrapper) {
   const elWrapper = document.createElement("div");
-  switch (type) {
-    case "circle":
-      const size = Math.random() * diag / 50 + 5;
-      const bgColor = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`
-
-      elWrapper.style.left = e.clientX - size / 2 + "px";
-      elWrapper.style.top = e.clientY - size / 2 + "px";
-      elWrapper.style.width = size + "px";
-      elWrapper.style.height = size + "px";
-      elWrapper.style.backgroundColor = bgColor;
-      elWrapper.className = "resize";
-      break;
-      
-    case "letter":
-      elWrapper.className = "letter-wrapper"
-      elWrapper.style.left = e.clientX - 20 + "px";
-      elWrapper.style.top = e.clientY - 20 + "px";
-    default:
-      break;
+  if (i < filteredLetters.length) {
+    elWrapper.className = "letter-wrapper";
+    elWrapper.style.left = e.clientX - 20 + "px";
+    elWrapper.style.top = e.clientY - 20 + "px";
+    elWrapper.innerText = letter;
+  } else {
+    const diag = Math.sqrt(wrapper.clientWidth ** 2 + wrapper.clientHeight ** 2);
+    const size = Math.random() * diag / 50 + 5;
+    const bgColor = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+    elWrapper.style.left = e.clientX - size / 2 + "px";
+    elWrapper.style.top = e.clientY - size / 2 + "px";
+    elWrapper.style.width = size + "px";
+    elWrapper.style.height = size + "px";
+    elWrapper.style.backgroundColor = bgColor;
+    elWrapper.className = "resize";
   }
-  return elWrapper
+  return elWrapper;
 }
 
 function animate({ timing, draw, duration }) {
   let start = performance.now();
   requestAnimationFrame(function animate(time) {
-
     let timeFraction = (time - start) / duration;
     if (timeFraction > 1) timeFraction = 1;
-
     let progress = timing(timeFraction);
     draw(progress);
     if (timeFraction < 1) {
@@ -44,96 +38,42 @@ function animate({ timing, draw, duration }) {
 }
 
 function addElementsLimits(el, wrapperSize) {
-  if (el.getBoundingClientRect().top <= 0) {
-    el.style.top = 0 + 'px'
-  }
-  if (el.getBoundingClientRect().left <= 0) {
-    el.style.left = 0 + 'px'
-  }
-  if (el.getBoundingClientRect().right >= wrapperSize.width) {
-    el.style.left = wrapperSize.width - el.getBoundingClientRect().width + "px"
-  }
-  if (el.getBoundingClientRect().bottom >= wrapperSize.height) {
-    el.style.top = wrapperSize.height - el.getBoundingClientRect().height + "px"
-  }
+  el.style.top = el.getBoundingClientRect().top <= 0 && '0px';
+  el.style.left = el.getBoundingClientRect().left <= 0 && '0px';
+  el.style.left = el.getBoundingClientRect().right >= wrapperSize.width && wrapperSize.width - el.getBoundingClientRect().width + "px";
+  el.style.top = el.getBoundingClientRect().bottom >= wrapperSize.height && wrapperSize.height - el.getBoundingClientRect().height + "px";
 }
 
 function createFireworkInQuarter(quarter, el, wrapperSize, timing, speed, angle, x, y, duration) {
   animate({
     timing(timeFraction) {
-      return timeFraction * timing
+      return timeFraction * timing;
     },
     draw(progress) {
-      switch (quarter) {
-        case 1:
-          el.style.top = y + Math.pow((progress * speed - speed), 2) - Math.pow(speed, 2) + 'px';
-          el.style.left = x + progress * angle * 2 + 'px'
-          break;
-        case 2:
-          el.style.top = y + Math.pow((progress * speed), 2) + 'px';
-          el.style.left = x + progress * angle * 2 + 'px';
-          break;
-        case 3:
-          el.style.top = y + Math.pow((progress * speed), 2) + 'px';
-          el.style.left = x - progress * angle * 2 + 'px'
-          break;
-        case 4:
-          el.style.top = y + Math.pow((progress * speed - speed), 2) - Math.pow(speed, 2) + 'px';
-          el.style.left = x - progress * angle * 2 + 'px'
-          break;
-        default:
-          break;
-      }
-      addElementsLimits(el, wrapperSize)
+      el.style.left = quarter === 0 || quarter === 1 ? x + progress * angle * 2 + 'px' : el.style.left = x - progress * angle * 2 + 'px';
+      el.style.top = quarter === 0 || quarter === 3 ? y + Math.pow((progress * speed - speed), 2) - Math.pow(speed, 2) + 'px' : y + Math.pow((progress * speed), 2) + 'px';
+      addElementsLimits(el, wrapperSize);
     },
     duration: duration
   })
 }
 
-function createParameters(el) {
-  const x = parseFloat(el.style.left);
-  const y = parseFloat(el.style.top);
-  const angle = Math.random() * 120;
-  const speed = Math.random() * 20;
-  const timing = Math.random() + 0.5;
-  return { x, y, angle, speed, timing }
-}
-
-function createAnimation(randomizer, elCounts, el, wrapperSize, timing, speed, angle, x, y, duration) {
-  if (randomizer < elCounts / 4) {
-    createFireworkInQuarter(1, el, wrapperSize, timing, speed, angle, x, y, duration)
-  } else if (randomizer < elCounts / 2) {
-    createFireworkInQuarter(2, el, wrapperSize, timing, speed, angle, x, y, duration)
-  } else if (randomizer < 3 * elCounts / 4) {
-    createFireworkInQuarter(3, el, wrapperSize, timing, speed, angle, x, y, duration)
-  } else {
-    createFireworkInQuarter(4, el, wrapperSize, timing, speed, angle, x, y, duration)
-  }
-}
-
 function createFirework(e) {
+  const wrapper = document.querySelector(".wrapper");
   const wrapperSize = wrapper.getBoundingClientRect();
-  const letters = PHRASE.toUpperCase().split("").sort().reverse();
-  const filteredLetters = letters.filter(l => l !== " ");
-  const elCounts = PARTS_COUNT + filteredLetters.length;
-  let element
   for (let i = 0; i < elCounts; i++) {
-    const randomizer = Math.random() * (filteredLetters.length + PARTS_COUNT);
-    if (i < filteredLetters.length) {
-      const letter = createElement(e, "letter", i);
-      letter.innerText = filteredLetters[i];
-      element = letter
-      const { x, y, angle, speed, timing } = createParameters(letter)
-      createAnimation(randomizer, elCounts, letter, wrapperSize, timing, speed, angle, x, y, 1400)
-    } else {
-      const circle = createElement(e, "circle");
-      element = circle
-      const { x, y, angle, speed, timing } = createParameters(circle);
-      createAnimation(randomizer, elCounts, circle, wrapperSize, timing, speed, angle, x, y, 1000)
-    }
+    const randomQuarter = Math.floor(Math.random() * 4);
+    const element = createElement(e, i, filteredLetters[i], wrapper);
     wrapper.append(element);
     setTimeout(() => element.remove(), 1400);
+    const x = parseFloat(element.style.left);
+    const y = parseFloat(element.style.top);
+    const angle = Math.random() * 120;
+    const speed = Math.random() * 20;
+    const timing = Math.random() + 0.5;
+    const duration = i < filteredLetters.length ? 1400 : 1000;
+    createFireworkInQuarter(randomQuarter, element, wrapperSize, timing, speed, angle, x, y, duration);
   }
 }
 
-document.body.addEventListener("click", createFirework)
+document.body.addEventListener("click", createFirework);
